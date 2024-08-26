@@ -463,7 +463,7 @@
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const description = document.getElementById('description').value;
+            const description = sanitizeInput(document.getElementById('description').value);
             const amount = parseFloat(document.getElementById('amount').value);
             const type = document.getElementById('type').value;
             const category = document.getElementById('category').value;
@@ -495,7 +495,7 @@
                 'moradia': '🏠',
                 'entreterimento': '🎬',
                 'saúde': '❤️',
-                'educacao': '',
+                'educacao': '🎓',
                 'salário': '💰',
                 'investimento': '📈',
                 'outro': '❓'
@@ -961,7 +961,7 @@
             });
         }
 
-        // Adicione esta função para criar as opções do select com ícones
+        // Adiciona função para criar as opções do select com ícones
         function populateCategorySelect() {
             const categorySelect = document.getElementById('category');
             const categories = [
@@ -1012,27 +1012,37 @@
             loginTabBtn.classList.remove('active');
         });
 
+        const loginAttempts = {};
+
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            const username = document.getElementById('login-username').value;
-            const password = document.getElementById('login-password').value;
+            const username = sanitizeInput(document.getElementById('login-username').value);
+            const password = sanitizeInput(document.getElementById('login-password').value);
             
-            if (!users[username]) {
-                alert('Usuário não encontrado!');
-                return;
-            } else if (users[username].password !== password) {
-                alert('Senha incorreta!');
+            if (loginAttempts[username] >= 5) {
+                alert('Muitas tentativas de login. Tente novamente mais tarde.');
                 return;
             }
             
+            if (!users[username]) {
+                alert('Usuário não encontrado!');
+                loginAttempts[username] = (loginAttempts[username] || 0) + 1;
+                return;
+            } else if (users[username].password !== hashPassword(password)) {
+                alert('Senha incorreta!');
+                loginAttempts[username] = (loginAttempts[username] || 0) + 1;
+                return;
+            }
+            
+            loginAttempts[username] = 0;
             loginUser(username);
         });
 
         registerForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            const username = document.getElementById('register-username').value;
-            const password = document.getElementById('register-password').value;
-            const confirmPassword = document.getElementById('register-confirm-password').value;
+            const username = sanitizeInput(document.getElementById('register-username').value);
+            const password = sanitizeInput(document.getElementById('register-password').value);
+            const confirmPassword = sanitizeInput(document.getElementById('register-confirm-password').value);
             
             if (users[username]) {
                 alert('Nome de usuário já existe!');
@@ -1044,7 +1054,7 @@
                 return;
             }
             
-            users[username] = { password: password, transactions: [] };
+            users[username] = { password: hashPassword(password), transactions: [] };
             localStorage.setItem('users', JSON.stringify(users));
             alert('Cadastro realizado com sucesso!');
             loginUser(username);
@@ -1088,6 +1098,16 @@
 
         // Call loadData when the page loads
         window.addEventListener('load', loadData);
+
+        function hashPassword(password) {
+            return btoa(password); 
+        }
+
+        function sanitizeInput(input) {
+            return input.replace(/[<>&"']/g, function (c) {
+                return {'<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#039;'}[c];
+            });
+        }
     </script>
 </body>
 </html>
