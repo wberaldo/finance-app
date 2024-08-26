@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Beraldo's Finance App</title>
+    <title>💰 Beraldo's Finance App</title>
     <link rel="icon" href="financial-profit.png" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -140,10 +140,22 @@
         }
         #theme-toggle {
             position: fixed;
-            top: 20px;
+            bottom: 20px;
             right: 20px;
             z-index: 1000;
             background-color: var(--primary-color);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #theme-toggle:hover {
+            opacity: 0.9;
         }
         #filters {
             display: flex;
@@ -241,13 +253,89 @@
         .transaction-amount.income {
             color: var(--income-color);
         }
+        #auth-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        #auth-tabs button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            border: none;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            cursor: pointer;
+            border-radius: var(--border-radius);
+            transition: background-color 0.3s;
+        }
+
+        #auth-tabs button.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .logout-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.3s;
+            z-index: 1000;
+        }
+
+        .logout-btn:hover {
+            background-color: #c0392b;
+        }
     </style>
 </head>
 <body>
     <button id="theme-toggle">🌓</button>
-    <div class="container">
+    <div id="auth-container" class="container">
         <h1>💰 Beraldo's Finance App</h1>
+        <div id="auth-tabs">
+            <button id="login-tab-btn" class="active">Login</button>
+            <button id="register-tab-btn">Cadastro</button>
+        </div>
+        <form id="login-form" class="card">
+            <h2>Login</h2>
+            <div class="form-group">
+                <label for="login-username">Nome de usuário</label>
+                <input type="text" id="login-username" required>
+            </div>
+            <div class="form-group">
+                <label for="login-password">Senha</label>
+                <input type="password" id="login-password" required>
+            </div>
+            <button type="submit">Entrar</button>
+        </form>
+        <form id="register-form" class="card" style="display: none;">
+            <h2>Cadastro</h2>
+            <div class="form-group">
+                <label for="register-username">Nome de usuário</label>
+                <input type="text" id="register-username" required>
+            </div>
+            <div class="form-group">
+                <label for="register-password">Senha</label>
+                <input type="password" id="register-password" required>
+            </div>
+            <div class="form-group">
+                <label for="register-confirm-password">Confirmar Senha</label>
+                <input type="password" id="register-confirm-password" required>
+            </div>
+            <button type="submit">Cadastrar</button>
+        </form>
+    </div>
+    <div id="app-container" class="container" style="display: none;">
+        <h1>💰 Beraldo's Finance App - <span id="current-user"></span></h1>
         
+        <button id="logout" class="logout-btn">Sair</button>
+
         <form id="transaction-form" class="card">
             <h2>Adicionar Transação</h2>
             <div class="form-group">
@@ -895,6 +983,111 @@
                 categorySelect.appendChild(option);
             });
         }
+
+        let currentUser = null;
+        let users = JSON.parse(localStorage.getItem('users')) || {};
+
+        const loginForm = document.getElementById('login-form');
+        const loginContainer = document.getElementById('auth-container');
+        const appContainer = document.getElementById('app-container');
+        const currentUserSpan = document.getElementById('current-user');
+        const logoutButton = document.getElementById('logout');
+        const loginTabBtn = document.getElementById('login-tab-btn');
+        const registerTabBtn = document.getElementById('register-tab-btn');
+        const registerForm = document.getElementById('register-form');
+
+        loginTabBtn.addEventListener('click', () => {
+            console.log('Login tab clicked');
+            loginForm.style.display = 'block';
+            registerForm.style.display = 'none';
+            loginTabBtn.classList.add('active');
+            registerTabBtn.classList.remove('active');
+        });
+
+        registerTabBtn.addEventListener('click', () => {
+            console.log('Register tab clicked');
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'block';
+            registerTabBtn.classList.add('active');
+            loginTabBtn.classList.remove('active');
+        });
+
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            if (!users[username]) {
+                alert('Usuário não encontrado!');
+                return;
+            } else if (users[username].password !== password) {
+                alert('Senha incorreta!');
+                return;
+            }
+            
+            loginUser(username);
+        });
+
+        registerForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+            
+            if (users[username]) {
+                alert('Nome de usuário já existe!');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                alert('As senhas não coincidem!');
+                return;
+            }
+            
+            users[username] = { password: password, transactions: [] };
+            localStorage.setItem('users', JSON.stringify(users));
+            alert('Cadastro realizado com sucesso!');
+            loginUser(username);
+        });
+
+        function loginUser(username) {
+            currentUser = username;
+            transactions = users[username].transactions;
+            loginContainer.style.display = 'none';
+            appContainer.style.display = 'block';
+            currentUserSpan.textContent = currentUser;
+            updateTransactionsList();
+            updateCharts();
+            updateSummary();
+        }
+
+        logoutButton.addEventListener('click', function() {
+            currentUser = null;
+            transactions = [];
+            loginContainer.style.display = 'block';
+            appContainer.style.display = 'none';
+            loginForm.reset();
+            registerForm.reset();
+            // Reset the login/register tabs to default state
+            loginTabBtn.click();
+        });
+
+        function saveData() {
+            if (currentUser) {
+                users[currentUser].transactions = transactions;
+                localStorage.setItem('users', JSON.stringify(users));
+            }
+        }
+
+        function loadData() {
+            const savedUsers = localStorage.getItem('users');
+            if (savedUsers) {
+                users = JSON.parse(savedUsers);
+            }
+        }
+
+        // Call loadData when the page loads
+        window.addEventListener('load', loadData);
     </script>
 </body>
 </html>
