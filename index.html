@@ -468,19 +468,15 @@
             const type = document.getElementById('type').value;
             const category = document.getElementById('category').value;
 
-            const submitButton = form.querySelector('button[type="submit"]');
-            const editIndex = submitButton.getAttribute('data-edit-index');
+            const transaction = {
+                description,
+                amount,
+                type,
+                category,
+                date: new Date().toISOString()
+            };
 
-            if (editIndex !== null) {
-                // Atualizando uma transação existente
-                transactions[editIndex] = { description, amount, type, category, date: transactions[editIndex].date };
-                submitButton.textContent = 'Adicionar Transação';
-                submitButton.removeAttribute('data-edit-index');
-            } else {
-                // Adicionando uma nova transação
-                transactions.push({ description, amount, type, category, date: new Date().toISOString() });
-            }
-
+            transactions.push(transaction);
             saveData();
             updateTransactionsList();
             updateCharts();
@@ -801,18 +797,19 @@
 
         // Adicione esta nova função para exportar dados
         function exportToCSV() {
+            const BOM = '\uFEFF';  // Marca de Ordem de Byte (BOM) para UTF-8
             const csvContent = [
-                ['Descrição', 'Valor', 'Tipo', 'Categoria', 'Data'],
+                ['Descrição', 'Valor (R$)', 'Tipo', 'Categoria', 'Data'],
                 ...transactions.map(t => [
                     t.description,
-                    t.amount,
-                    t.type,
-                    t.category,
-                    new Date(t.date).toLocaleDateString()
+                    t.amount.toFixed(2).replace('.', ','),
+                    t.type.charAt(0).toUpperCase() + t.type.slice(1),
+                    t.category.charAt(0).toUpperCase() + t.category.slice(1),
+                    new Date(t.date).toLocaleDateString('pt-BR')
                 ])
-            ].map(e => e.join(',')).join('\n');
+            ].map(row => row.map(cell => `"${cell}"`).join(';')).join('\n');
 
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             if (link.download !== undefined) {
                 const url = URL.createObjectURL(blob);
